@@ -15,7 +15,7 @@ test('public root page should stay noindex', async () => {
 test('public root page should point users to the preview app, userscript, and GitHub repo', async () => {
     const html = await readText('public/index.html');
 
-    assert.match(html, /href="https:\/\/github\.com\/aiglassbox\/Unmark-Me"/i);
+    assert.match(html, /href="https:\/\/github\.com\/taksh786\/Unmark-Me"/i);
     assert.match(html, /href="userscript\/gemini-watermark-remover\.user\.js"/i);
     assert.match(html, /href="\.\/dev-preview\.html"|href="dev-preview\.html"/i);
 });
