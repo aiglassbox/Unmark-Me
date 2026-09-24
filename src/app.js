@@ -23,29 +23,29 @@ import {
 } from './shared/debugFileHandoff.js';
 
 const TEXT = {
-    loading: '正在加载资源...',
-    size: '尺寸',
-    watermark: '检测到的水印',
-    position: '位置',
-    status: '状态',
-    removed: '水印已移除',
-    skipped: '未检测到可移除水印，已保留原图',
-    visibleResidual: '已处理，可能仍有可见残影',
-    possibleContentDamage: '已生成最佳结果，请检查水印区域',
-    mixedQualityWarning: '已生成最佳结果，可能有残影或局部失真',
-    unsupported: '浏览器不支持复制图片',
-    copied: '已复制！',
-    copy: '复制结果',
-    copyFailed: '复制失败',
-    unsupportedFile: '请选择 JPG、PNG、WebP 图片，或 MP4/WebM/MOV 视频。',
-    fileTooLarge: '图片调试入口暂不处理超过 20MB 的图片。视频会进入视频调试页。',
-    skippedLargeImages: '已跳过超过 20MB 的图片。',
-    handoffVideo: '正在进入视频调试流程...',
-    progress: '处理进度',
-    pending: '等待处理',
-    loadingImage: '读取图片...',
-    processing: '正在处理...',
-    processFailed: '处理失败'
+    loading: 'Loading resources…',
+    size: 'Size',
+    watermark: 'Detected watermark',
+    position: 'Position',
+    status: 'Status',
+    removed: 'Watermark removed',
+    skipped: 'No removable watermark found. The original was kept.',
+    visibleResidual: 'Processed. Faint traces may still be visible.',
+    possibleContentDamage: 'Best result generated. Please check the watermark area.',
+    mixedQualityWarning: 'Best result generated. There may be faint traces or slight distortion.',
+    unsupported: 'Your browser does not support copying images.',
+    copied: 'Copied!',
+    copy: 'Copy result',
+    copyFailed: 'Copy failed',
+    unsupportedFile: 'Please choose a JPG, PNG or WebP image, or an MP4, WebM or MOV video.',
+    fileTooLarge: 'Images larger than 20MB are not supported. Videos open in the video workflow.',
+    skippedLargeImages: 'Skipped images larger than 20MB.',
+    handoffVideo: 'Opening the video workflow…',
+    progress: 'Progress',
+    pending: 'Waiting',
+    loadingImage: 'Reading image…',
+    processing: 'Processing…',
+    processFailed: 'Processing failed'
 };
 
 let enginePromise = null;
@@ -151,22 +151,28 @@ async function init() {
 
 function setupEventListeners() {
     uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            fileInput.click();
+        }
+    });
     fileInput.addEventListener('change', handleFileSelect);
 
     document.addEventListener('dragover', (e) => {
         e.preventDefault();
-        uploadArea.classList.add('border-primary', 'bg-emerald-50');
+        uploadArea.classList.add('is-dragging');
     });
 
     document.addEventListener('dragleave', (e) => {
         if (e.clientX === 0 && e.clientY === 0) {
-            uploadArea.classList.remove('border-primary', 'bg-emerald-50');
+            uploadArea.classList.remove('is-dragging');
         }
     });
 
     document.addEventListener('drop', (e) => {
         e.preventDefault();
-        uploadArea.classList.remove('border-primary', 'bg-emerald-50');
+        uploadArea.classList.remove('is-dragging');
         if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             handleFiles(Array.from(e.dataTransfer.files));
         }
@@ -202,8 +208,10 @@ function reset() {
     originalImage.src = '';
     processedImage.src = '';
     originalInfo.innerHTML = '';
+    originalInfo.style.display = '';
     processedInfo.innerHTML = '';
     processedInfo.style.display = 'none';
+    delete singlePreview.dataset.state;
     processedOverlay.style.display = 'none';
     sliderHandle.style.display = 'none';
     copyBtn.style.display = 'none';
@@ -263,7 +271,14 @@ async function handleFiles(files) {
         processedUrl: null
     };
 
-    singlePreview.style.display = 'block';
+    originalInfo.style.display = '';
+    processedInfo.style.display = 'none';
+    processedOverlay.style.display = 'none';
+    sliderHandle.style.display = 'none';
+    copyBtn.style.display = 'none';
+    downloadBtn.style.display = 'none';
+    singlePreview.dataset.state = 'processing';
+    singlePreview.style.display = 'grid';
     processSingle(currentItem);
 }
 
@@ -305,7 +320,7 @@ async function routeVideoFile(file) {
     } catch (error) {
         hideLoading();
         console.error(error);
-        setStatusMessage(error.message || '无法进入视频调试流程，请打开视频页后重新选择文件。', 'warn');
+        setStatusMessage(error.message || 'Could not open the video workflow. Open the video page and choose the file again.', 'warn');
     }
 }
 
@@ -320,7 +335,7 @@ async function consumePendingImageHandoff() {
         window.history.replaceState(null, '', window.location.pathname);
     } catch (error) {
         console.warn('image handoff unavailable:', error);
-        setStatusMessage(error.message || '读取图片暂存失败，请重新选择文件。', 'warn');
+        setStatusMessage(error.message || 'Could not read the stored image. Please choose the file again.', 'warn');
     }
 }
 
@@ -334,9 +349,10 @@ function renderSingleImageMeta(item) {
     if (!watermarkInfo) return;
 
     originalInfo.innerHTML = `
-        <p>${TEXT.size}: ${item.originalImg.width}x${item.originalImg.height}</p>
-        <p>${TEXT.watermark}: ${watermarkInfo.size}x${watermarkInfo.size}</p>
-        <p>${TEXT.position}: (${watermarkInfo.position.x},${watermarkInfo.position.y})</p>
+        <p class="meta-status is-processing"><span class="meta-status-icon" aria-hidden="true"></span>${TEXT.processing}</p>
+        <p class="meta-row"><span>${TEXT.size}</span><span>${item.originalImg.width} × ${item.originalImg.height}</span></p>
+        <p class="meta-row"><span>${TEXT.watermark}</span><span>${watermarkInfo.size} × ${watermarkInfo.size}</span></p>
+        <p class="meta-row"><span>${TEXT.position}</span><span>${watermarkInfo.position.x}, ${watermarkInfo.position.y}</span></p>
     `;
 }
 
@@ -358,11 +374,16 @@ function renderSingleProcessedMeta(item) {
     const showWatermarkInfo = watermarkInfo && isConfirmedWatermarkDecision(item);
     const statusPresentation = getProcessedStatusPresentation(item);
 
+    const isWarning = statusPresentation.tone === 'warning';
+    const statusIcon = isWarning
+        ? '<path d="M12 7v6m0 4h.01" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>'
+        : '<path d="M6 12.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>';
+
     processedInfo.innerHTML = `
-        <p>${TEXT.size}: ${item.originalImg.width}x${item.originalImg.height}</p>
-        ${showWatermarkInfo ? `<p>${TEXT.watermark}: ${watermarkInfo.size}x${watermarkInfo.size}</p>` : ''}
-        ${showWatermarkInfo ? `<p>${TEXT.position}: (${watermarkInfo.position.x},${watermarkInfo.position.y})</p>` : ''}
-        <p class="${statusPresentation.tone === 'warning' ? 'text-warning' : ''}">${TEXT.status}: ${statusPresentation.label}</p>
+        <p class="meta-status${isWarning ? ' is-warning' : ''}"><span class="meta-status-icon" aria-hidden="true"><svg viewBox="0 0 24 24">${statusIcon}</svg></span>${statusPresentation.label}</p>
+        <p class="meta-row"><span>${TEXT.size}</span><span>${item.originalImg.width} × ${item.originalImg.height}</span></p>
+        ${showWatermarkInfo ? `<p class="meta-row"><span>${TEXT.watermark}</span><span>${watermarkInfo.size} × ${watermarkInfo.size}</span></p>` : ''}
+        ${showWatermarkInfo ? `<p class="meta-row"><span>${TEXT.position}</span><span>${watermarkInfo.position.x}, ${watermarkInfo.position.y}</span></p>` : ''}
     `;
 }
 
@@ -383,7 +404,9 @@ async function processSingle(item) {
         processedImage.src = item.processedUrl;
         processedOverlay.style.display = 'block';
         sliderHandle.style.display = 'flex';
+        originalInfo.style.display = 'none';
         processedInfo.style.display = 'block';
+        singlePreview.dataset.state = 'done';
 
         copyBtn.style.display = 'flex';
         copyBtn.onclick = () => copyImage(item);
@@ -392,9 +415,12 @@ async function processSingle(item) {
         downloadBtn.onclick = () => downloadImage(item);
 
         renderSingleProcessedMeta(item);
-        document.getElementById('comparisonContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        singlePreview.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (error) {
         console.error(error);
+        delete singlePreview.dataset.state;
+        originalInfo.querySelector('.meta-status')?.remove();
+        setStatusMessage(TEXT.processFailed, 'warn');
     }
 }
 
@@ -405,11 +431,11 @@ function createImageCard(item) {
     card.innerHTML = `
         <div class="batch-comparison">
             <div class="batch-pane original">
-                <span class="batch-pane-label">原图</span>
+                <span class="batch-pane-label">Original</span>
                 <img id="original-${item.id}" class="batch-image" draggable="false" alt="" />
             </div>
             <div class="batch-pane processed">
-                <span class="batch-pane-label">处理后</span>
+                <span class="batch-pane-label">Cleaned</span>
                 <img id="processed-${item.id}" class="batch-image" draggable="false" alt="" />
             </div>
         </div>
@@ -418,12 +444,13 @@ function createImageCard(item) {
             <div class="batch-status" id="status-${item.id}"></div>
         </div>
         <div class="batch-actions">
-            <button id="copy-${item.id}" class="batch-button primary" style="display: none;">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m-1 10H8m4-3H8m1.5 6H8"></path></svg>
-                <span>${TEXT.copy}</span>
+            <button id="download-${item.id}" class="btn btn-primary btn-compact" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+                <span>Download</span>
             </button>
-            <button id="download-${item.id}" class="batch-button secondary" style="display: none;">
-                下载结果
+            <button id="copy-${item.id}" class="btn btn-secondary btn-compact" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0013.5 4h-7A2.5 2.5 0 004 6.5v7A2.5 2.5 0 006.5 16H8"/></svg>
+                <span>${TEXT.copy}</span>
             </button>
         </div>
     `;
@@ -458,6 +485,11 @@ function renderImageCardStatus(item) {
 
 function updateProgress() {
     progressText.textContent = `${TEXT.progress}: ${processedCount}/${imageQueue.length}`;
+    const progressBar = document.getElementById('batchProgressBar');
+    if (progressBar) {
+        const pct = imageQueue.length ? (processedCount / imageQueue.length) * 100 : 0;
+        progressBar.style.width = `${pct}%`;
+    }
 }
 
 async function processQueue(batchId) {
@@ -553,7 +585,7 @@ async function copyImage(item, targetBtn = copyBtn) {
         const originalSvgPath = svg.innerHTML;
 
         span.textContent = TEXT.copied;
-        svg.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>';
+        svg.innerHTML = '<path d="M5 13l4 4L19 7"></path>';
 
         setTimeout(() => {
             span.textContent = TEXT.copy;
@@ -574,34 +606,52 @@ function downloadImage(item) {
 
 function setupSlider() {
     const container = document.getElementById('comparisonContainer');
-    let isDown = false;
+    let activePointer = null;
 
-    function move(e) {
-        if (!isDown) return;
-        const rect = container.getBoundingClientRect();
-        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-        if (!clientX) return;
-
-        const x = clientX - rect.left;
-        const percent = Math.min(Math.max(x / rect.width, 0), 1) * 100;
-
-        processedOverlay.style.width = `${percent}%`;
-        sliderHandle.style.left = `${percent}%`;
+    function setPosition(percent) {
+        const clamped = Math.min(Math.max(percent, 0), 100);
+        processedOverlay.style.width = `${clamped}%`;
+        sliderHandle.style.left = `${clamped}%`;
+        sliderHandle.setAttribute('aria-valuenow', String(Math.round(clamped)));
     }
 
-    container.addEventListener('mousedown', (e) => {
-        isDown = true;
-        move(e);
-    });
-    window.addEventListener('mouseup', () => { isDown = false; });
-    window.addEventListener('mousemove', move);
+    function moveTo(clientX) {
+        const rect = container.getBoundingClientRect();
+        if (!rect.width) return;
+        setPosition(((clientX - rect.left) / rect.width) * 100);
+    }
 
-    container.addEventListener('touchstart', (e) => {
-        isDown = true;
-        move(e);
+    container.addEventListener('pointerdown', (e) => {
+        if (processedOverlay.style.display === 'none') return;
+        activePointer = e.pointerId;
+        container.setPointerCapture(e.pointerId);
+        moveTo(e.clientX);
     });
-    window.addEventListener('touchend', () => { isDown = false; });
-    window.addEventListener('touchmove', move);
+    container.addEventListener('pointermove', (e) => {
+        if (e.pointerId !== activePointer) return;
+        moveTo(e.clientX);
+    });
+    const release = (e) => {
+        if (e.pointerId === activePointer) activePointer = null;
+    };
+    container.addEventListener('pointerup', release);
+    container.addEventListener('pointercancel', release);
+
+    sliderHandle.addEventListener('keydown', (e) => {
+        const current = Number(sliderHandle.getAttribute('aria-valuenow')) || 50;
+        const step = e.shiftKey ? 10 : 2;
+        const next = {
+            ArrowLeft: current - step,
+            ArrowDown: current - step,
+            ArrowRight: current + step,
+            ArrowUp: current + step,
+            Home: 0,
+            End: 100
+        }[e.key];
+        if (next === undefined) return;
+        e.preventDefault();
+        setPosition(next);
+    });
 }
 
 init();

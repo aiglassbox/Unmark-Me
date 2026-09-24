@@ -6,20 +6,16 @@ async function readText(relativePath) {
     return readFile(new URL(`../../${relativePath}`, import.meta.url), 'utf8');
 }
 
-test('public root page should stay noindex with canonical pointed to the official website', async () => {
+test('public root page should stay noindex', async () => {
     const html = await readText('public/index.html');
 
     assert.match(html, /<meta\s+name="robots"\s+content="[^"]*noindex[^"]*nofollow[^"]*"/i);
-    assert.match(
-        html,
-        /<link\s+rel="canonical"\s+href="https:\/\/geminiwatermarkremover\.io\/"\s*\/?>/i
-    );
 });
 
-test('public root page should point users to the official website, userscript, and retained internal preview page', async () => {
+test('public root page should point users to the preview app, userscript, and GitHub repo', async () => {
     const html = await readText('public/index.html');
 
-    assert.match(html, /href="https:\/\/geminiwatermarkremover\.io\/"/i);
+    assert.match(html, /href="https:\/\/github\.com\/aiglassbox\/Unmark-Me"/i);
     assert.match(html, /href="userscript\/gemini-watermark-remover\.user\.js"/i);
     assert.match(html, /href="\.\/dev-preview\.html"|href="dev-preview\.html"/i);
 });

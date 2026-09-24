@@ -145,7 +145,7 @@ async function loadAllenkFdncnnRuntime(runtimeProfile = resolveAllenkFdncnnRunti
         const runtimePromise = (async () => {
             const response = await fetch(profile.modelUrl, { signal });
             if (!response.ok) {
-                throw new Error(`无法加载 AI 模型：${response.status}`);
+                throw new Error(`Could not load the AI model: ${response.status}`);
             }
             const modelBytes = new Uint8Array(await response.arrayBuffer());
             signal?.throwIfAborted();
@@ -157,7 +157,7 @@ async function loadAllenkFdncnnRuntime(runtimeProfile = resolveAllenkFdncnnRunti
                         console.warn('WebGPU AI runtime skipped:', preflight.reason);
                         throw new Error(preflight.reason);
                     }
-                    setStatus('正在启用 WebGPU AI 去水印...');
+                    setStatus('Enabling WebGPU AI watermark removal…');
                     const webgpuOrt = await import('onnxruntime-web/webgpu');
                     signal?.throwIfAborted();
                     return await createAllenkFdncnnOnnxRuntime({
@@ -200,7 +200,7 @@ async function resolveExportDenoiseRuntime(denoiseBackend, runtimeProfile = reso
     if (denoiseBackend !== VIDEO_DENOISE_BACKENDS.ALLENK_FDNCNN_BROWSER_SPIKE) {
         return null;
     }
-    setStatus('正在加载 AI FDnCNN ONNX 模型，首次加载会稍慢...');
+    setStatus('Loading the AI FDnCNN ONNX model. The first load takes a little longer…');
     return loadAllenkFdncnnRuntime(runtimeProfile, signal);
 }
 
@@ -257,29 +257,29 @@ function createDetectionProgressHandler(jobId, { start = 0, span = 1 } = {}) {
         if (jobId !== state.jobId) return;
         const safeProgress = Number.isFinite(progress) ? Math.max(0, Math.min(1, progress)) : 0;
         const labelByStep = {
-            metadata: '读取视频',
-            sample: sampleCount > 0 ? `抽帧 ${sampledFrames}/${sampleCount}` : '抽帧',
-            score: '匹配水印',
-            done: '检测完成'
+            metadata: 'Reading video',
+            sample: sampleCount > 0 ? `Sampling frames ${sampledFrames}/${sampleCount}` : 'Sampling frames',
+            score: 'Matching watermark',
+            done: 'Detection complete'
         };
-        setProgress(start + safeProgress * span, labelByStep[step] || '检测中');
+        setProgress(start + safeProgress * span, labelByStep[step] || 'Detecting');
         if (step === 'sample') {
             setStatus(sampleCount > 0
-                ? `正在抽帧检测水印：${sampledFrames}/${sampleCount}`
-                : '正在抽帧检测水印...');
+                ? `Sampling frames to detect the watermark: ${sampledFrames}/${sampleCount}`
+                : 'Sampling frames to detect the watermark…');
         } else if (step === 'score') {
-            setStatus('正在匹配水印候选，页面会保持响应...');
+            setStatus('Matching watermark candidates. The page stays responsive…');
         }
     };
 }
 
 function formatSeconds(value) {
-    if (!Number.isFinite(value)) return '未知';
+    if (!Number.isFinite(value)) return 'Unknown';
     return `${value.toFixed(2)}s`;
 }
 
 function formatBitrate(value) {
-    if (!Number.isFinite(value)) return '未知';
+    if (!Number.isFinite(value)) return 'Unknown';
     return `${(value / 1000 / 1000).toFixed(2)} Mbps`;
 }
 
@@ -317,7 +317,7 @@ function updatePlaybackControls() {
     els.playPauseBtn.disabled = !canPlay;
     els.scrubber.disabled = !canPlay;
     els.playPauseBtn.dataset.playing = els.originalVideo.paused ? 'false' : 'true';
-    els.playPauseBtn.setAttribute('aria-label', els.originalVideo.paused ? '播放' : '暂停');
+    els.playPauseBtn.setAttribute('aria-label', els.originalVideo.paused ? 'Play' : 'Pause');
 
     const duration = Number.isFinite(els.originalVideo.duration) ? els.originalVideo.duration : 0;
     const currentTime = Number.isFinite(els.originalVideo.currentTime) ? els.originalVideo.currentTime : 0;
@@ -362,7 +362,7 @@ async function playComparison() {
         }
     } catch (error) {
         console.warn('original video play failed:', error);
-        setStatus('浏览器阻止了播放，请再点一次播放按钮。', 'warn');
+        setStatus('The browser blocked playback. Please press Play again.', 'warn');
     } finally {
         updatePlaybackControls();
     }
@@ -395,8 +395,8 @@ function renderAutoPresetSummary(preset = null) {
     if (!els.autoPresetSummary) return;
     if (!preset) {
         els.autoPresetSummary.innerHTML = `
-            <strong>AI 自动处理</strong>
-            <span>选择视频后自动检测水印，导出时使用本地 AI 模型清理。</span>
+            <strong>AI cleanup</strong>
+            <span>The watermark is detected automatically when you choose a video, and a local AI model cleans it up on export.</span>
         `;
         return;
     }
@@ -409,24 +409,24 @@ function renderAutoPresetSummary(preset = null) {
 
 function renderMetadata(metadata) {
     if (!metadata) {
-        els.metadata.innerHTML = '<p class="muted">等待载入视频</p>';
+        els.metadata.innerHTML = '<p class="muted">Waiting for a video</p>';
         return;
     }
     const reference = isReferenceGeminiVideoSize(metadata.width, metadata.height);
     els.metadata.innerHTML = `
         <dl>
-            <div><dt>尺寸</dt><dd>${metadata.width} x ${metadata.height}</dd></div>
-            <div><dt>时长</dt><dd>${formatSeconds(metadata.duration)}</dd></div>
-            <div><dt>帧率</dt><dd>${metadata.frameRate.toFixed(2)} fps</dd></div>
-            <div><dt>视频码率</dt><dd>${formatBitrate(metadata.averageBitrate)}</dd></div>
-            <div><dt>水印规格</dt><dd>${reference ? '1920x1080 已确认' : '比例推断，实验性'}</dd></div>
+            <div><dt>Size</dt><dd>${metadata.width} x ${metadata.height}</dd></div>
+            <div><dt>Duration</dt><dd>${formatSeconds(metadata.duration)}</dd></div>
+            <div><dt>Frame rate</dt><dd>${metadata.frameRate.toFixed(2)} fps</dd></div>
+            <div><dt>Video bitrate</dt><dd>${formatBitrate(metadata.averageBitrate)}</dd></div>
+            <div><dt>Watermark spec</dt><dd>${reference ? '1920x1080 confirmed' : 'Inferred from aspect ratio (experimental)'}</dd></div>
         </dl>
     `;
 }
 
 function renderDetection(detection) {
     if (!detection) {
-        els.detection.innerHTML = '<p class="muted">先检测或直接导出</p>';
+        els.detection.innerHTML = '<p class="muted">Detect first, or export directly</p>';
         return;
     }
 
@@ -441,12 +441,12 @@ function renderDetection(detection) {
             : null;
     els.detection.innerHTML = `
         <dl>
-            <div><dt>候选</dt><dd>${bestLabel}</dd></div>
-            <div><dt>位置</dt><dd>${detection.position.x}, ${detection.position.y}</dd></div>
-            <div><dt>大小</dt><dd>${detection.position.width} x ${detection.position.height}</dd></div>
-            <div><dt>均值分数</dt><dd>${Number.isFinite(bestScore) ? bestScore.toFixed(3) : '-'}</dd></div>
-            <div><dt>投票</dt><dd>${best.votes || 0}/${detection.summary?.frameCount || 0}</dd></div>
-            <div><dt>状态</dt><dd>${detection.isConfident ? '可导出' : '低置信'}</dd></div>
+            <div><dt>Candidate</dt><dd>${bestLabel}</dd></div>
+            <div><dt>Position</dt><dd>${detection.position.x}, ${detection.position.y}</dd></div>
+            <div><dt>Size</dt><dd>${detection.position.width} x ${detection.position.height}</dd></div>
+            <div><dt>Mean score</dt><dd>${Number.isFinite(bestScore) ? bestScore.toFixed(3) : '-'}</dd></div>
+            <div><dt>Votes</dt><dd>${best.votes || 0}/${detection.summary?.frameCount || 0}</dd></div>
+            <div><dt>Status</dt><dd>${detection.isConfident ? 'Ready to export' : 'Low confidence'}</dd></div>
         </dl>
     `;
 }
@@ -465,7 +465,7 @@ async function setFile(file) {
         return;
     }
     if (fileKind !== 'video') {
-        setStatus('请选择图片或视频文件。视频会在本页处理，图片会回到单图对比页。', 'warn');
+        setStatus('Please choose an image or video. Videos are processed here; images go back to the image page.', 'warn');
         return;
     }
 
@@ -487,8 +487,8 @@ async function setFile(file) {
     updateCompareMode();
     renderMetadata(null);
     renderDetection(null);
-    setProgress(0, '准备就绪');
-    setStatus('正在读取视频元数据...');
+    setProgress(0, 'Ready');
+    setStatus('Reading video metadata…');
     updateButtons();
 
     try {
@@ -496,10 +496,10 @@ async function setFile(file) {
         state.metadata = metadata;
         renderMetadata(metadata);
         applyAutomaticPreset(null, metadata, { silent: true });
-        setStatus('视频已载入，点击导出即可使用 AI 去水印。');
+        setStatus('Video loaded. Click Export to remove the watermark with AI.');
     } catch (error) {
         console.error(error);
-        setStatus(error.message || '读取视频失败', 'error');
+        setStatus(error.message || 'Could not read the video', 'error');
     } finally {
         updateButtons();
     }
@@ -507,12 +507,12 @@ async function setFile(file) {
 
 async function routeImageFile(file) {
     try {
-        setStatus('正在进入图片调试流程...');
+        setStatus('Opening the image page…');
         await saveDebugFileHandoff(file, 'image');
         window.location.assign('./dev-preview.html?fileHandoff=1');
     } catch (error) {
         console.error(error);
-        setStatus(error.message || '无法进入图片调试流程，请打开单图页后重新选择文件。', 'warn');
+        setStatus(error.message || 'Could not open the image page. Open it and choose the file again.', 'warn');
     }
 }
 
@@ -549,8 +549,8 @@ async function runDetection() {
     const jobId = ++state.jobId;
     state.running = true;
     updateButtons();
-    setProgress(0.05, '检测中');
-    setStatus('正在抽帧检测右下角水印...');
+    setProgress(0.05, 'Detecting');
+    setStatus('Sampling frames to detect the bottom-right watermark…');
 
     try {
         await yieldToBrowserFrame();
@@ -567,18 +567,18 @@ async function runDetection() {
         state.detection = result.detection;
         renderMetadata(result.metadata);
         renderDetection(result.detection);
-        setProgress(1, result.detection.isConfident ? '检测完成' : '低置信');
+        setProgress(1, result.detection.isConfident ? 'Detection complete' : 'Low confidence');
         const preset = applyAutomaticPreset(result.detection, result.metadata, { silent: true });
         if (preset.id === 'relocated-review') {
-            setStatus('检测完成，导出时会使用 AI 去水印。', result.detection.isConfident ? 'success' : 'warn');
+            setStatus('Detection complete. AI removal will be used on export.', result.detection.isConfident ? 'success' : 'warn');
         } else {
-            setStatus(result.detection.isConfident ? '检测完成，导出时会使用 AI 去水印。' : '检测置信度偏低，仍可尝试 AI 导出。', result.detection.isConfident ? 'success' : 'warn');
+            setStatus(result.detection.isConfident ? 'Detection complete. AI removal will be used on export.' : 'Detection confidence is low, but you can still try the AI export.', result.detection.isConfident ? 'success' : 'warn');
         }
     } catch (error) {
         if (!controller.signal.aborted) {
             console.error(error);
-            setStatus(error.message || '检测失败', 'error');
-            setProgress(0, '检测失败');
+            setStatus(error.message || 'Detection failed', 'error');
+            setProgress(0, 'Detection failed');
         }
     } finally {
         state.running = false;
@@ -596,15 +596,15 @@ async function runExport(signal) {
     const jobId = ++state.jobId;
     state.running = true;
     updateButtons();
-    setProgress(0, '开始');
-    setStatus('正在本地逐帧处理，页面保持打开即可。');
+    setProgress(0, 'Starting');
+    setStatus('Processing frame by frame on your device. Keep this page open.');
 
     try {
         signal.throwIfAborted();
         let detectionPayload = state.detection ? { metadata: state.metadata, detection: state.detection } : null;
         if (!detectionPayload) {
-            setProgress(0.04, '检测中');
-            setStatus('正在检测水印候选...');
+            setProgress(0.04, 'Detecting');
+            setStatus('Detecting watermark candidates…');
             await yieldToBrowserFrame();
             const detected = await detectGeminiVideoWatermark(state.file, {
                 signal,
@@ -680,13 +680,13 @@ async function runExport(signal) {
                     renderDetection(detection);
                 }
                 if (phase === 'detect') {
-                    setProgress(progress * 0.12, progress >= 1 ? '检测完成' : '检测中');
+                    setProgress(progress * 0.12, progress >= 1 ? 'Detection complete' : 'Detecting');
                 } else if (phase === 'export') {
                     const exportProgress = 0.12 + progress * 0.88;
-                    const frames = Number.isFinite(processedFrames) ? `${processedFrames} 帧` : '处理中';
+                    const frames = Number.isFinite(processedFrames) ? `${processedFrames} frames` : 'processing';
                     const aiNote = '';
-                    setProgress(exportProgress, `导出中 ${frames}`);
-                    setStatus(`正在导出视频，已处理 ${frames}${aiNote}。`);
+                    setProgress(exportProgress, `Exporting ${frames}`);
+                    setStatus(`Exporting video: ${frames} processed${aiNote}.`);
                 }
             }
         });
@@ -701,20 +701,20 @@ async function runExport(signal) {
         updateCompareMode();
         syncProcessedToOriginal({ force: true });
         els.downloadBtn.href = state.processedUrl;
-        els.downloadBtn.download = `${state.file.name.replace(/\.[^.]+$/, '')}_gwr_video_mvp.mp4`;
-        setProgress(1, '完成');
+        els.downloadBtn.download = `${state.file.name.replace(/\.[^.]+$/, '')}_unmarked.mp4`;
+        setProgress(1, 'Done');
         const audioNote = result.audioCopied
-            ? `音频已保留：${result.audioCodec || 'unknown'}，${result.audioPacketCount || 0} packets。`
-            : `音频未保留：${result.audioSkipReason || 'unknown'}。`;
+            ? `Audio kept: ${result.audioCodec || 'unknown'}, ${result.audioPacketCount || 0} packets.`
+            : `Audio not kept: ${result.audioSkipReason || 'unknown'}.`;
         const cleanupNote = result.denoiseBackend === VIDEO_DENOISE_BACKENDS.ALLENK_FDNCNN_BROWSER_SPIKE
-            ? 'AI 去水印已完成'
-            : '去水印已完成';
+            ? 'AI watermark removal complete'
+            : 'Watermark removal complete';
         const aiNote = '';
-        setStatus(`${cleanupNote}，已处理 ${result.processedFrames} 帧。${audioNote}`, 'success');
+        setStatus(`${cleanupNote}: ${result.processedFrames} frames processed. ${audioNote}`, 'success');
     } catch (error) {
         if (!signal.aborted) {
             console.error(error);
-            setStatus(error.message || '导出失败', 'error');
+            setStatus(error.message || 'Export failed', 'error');
         }
     } finally {
         state.running = false;
@@ -733,11 +733,11 @@ const batch = createBatchQueue();
 
 function batchStatusLabel(status) {
     switch (status) {
-        case 'pending': return '排队中';
-        case 'processing': return '处理中…';
-        case 'done': return '已完成 ✓';
-        case 'error': return '失败 ✗';
-        case 'skipped': return '已跳过';
+        case 'pending': return 'Queued';
+        case 'processing': return 'Processing…';
+        case 'done': return 'Done ✓';
+        case 'error': return 'Failed ✗';
+        case 'skipped': return 'Skipped';
         default: return '';
     }
 }
@@ -812,7 +812,7 @@ async function runBatch() {
     if (!summary) return;
 
     setStatus(
-        `批量处理完成：成功 ${summary.done}/${summary.total}，结果已自动下载。`,
+        `Batch complete: ${summary.done}/${summary.total} succeeded. Results were downloaded automatically.`,
         summary.done ? 'success' : 'warn'
     );
 }
@@ -863,7 +863,7 @@ function reset() {
     renderMetadata(null);
     renderDetection(null);
     renderAutoPresetSummary(null);
-    setProgress(0, '等待视频');
+    setProgress(0, 'Waiting for video');
     setStatus('');
     updateButtons();
 }
@@ -871,14 +871,14 @@ function reset() {
 function cancelProcessing() {
     if (!state.controller || state.controller.signal.aborted) return;
     state.controller.abort();
-    setStatus('正在停止处理并释放资源…');
+    setStatus('Stopping and releasing resources…');
     updateButtons();
 }
 
 function finishCancellation() {
     reset();
-    setStatus('已停止处理，剩余队列已取消。已下载的文件不受影响。');
-    setProgress(0, '已取消');
+    setStatus('Stopped. The rest of the queue was cancelled; files already downloaded are not affected.');
+    setProgress(0, 'Cancelled');
 }
 
 function setNumberControl(input, value) {
@@ -919,7 +919,7 @@ function applyAutomaticPreset(detection = state.detection, metadata = state.meta
     const preset = getAutomaticVideoPresetConfig(detection, metadata);
     applyPresetToControls(preset);
     if (!silent) {
-        setStatus(`已自动选择：${preset.label}。`, preset.allowLowConfidence ? 'warn' : 'success');
+        setStatus(`Auto-selected: ${preset.label}.`, preset.allowLowConfidence ? 'warn' : 'success');
     }
     return preset;
 }
@@ -960,7 +960,7 @@ function applyDebugControlOverrides() {
 function applyRelocatedReviewPreset() {
     const preset = getRelocatedReviewPresetConfig();
     applyPresetToControls(preset);
-    setStatus('已应用迁移锚点复核预设：Canvas 足迹抛光、12Mbps、允许低置信。此预设用于人工复核，不是默认策略。', 'warn');
+    setStatus('Applied the relocated-anchor review preset: Canvas footprint polish, 12 Mbps, low confidence allowed. This preset is for manual review, not the default.', 'warn');
 }
 
 function setupEvents() {
@@ -1048,7 +1048,7 @@ async function consumePendingVideoHandoff() {
         window.history.replaceState(null, '', window.location.pathname);
     } catch (error) {
         console.warn('video handoff unavailable:', error);
-        setStatus(error.message || '读取视频暂存失败，请重新选择文件。', 'warn');
+        setStatus(error.message || 'Could not read the stored video. Please choose the file again.', 'warn');
     }
 }
 
@@ -1056,13 +1056,13 @@ async function init() {
     applyPresetToControls(getAutomaticVideoPresetConfig());
 
     if (!('VideoDecoder' in window) || !('VideoEncoder' in window)) {
-        setStatus('当前浏览器缺少 WebCodecs，请使用新版 Chrome 或 Edge。', 'error');
+        setStatus('This browser does not support WebCodecs. Please use a recent Chrome or Edge.', 'error');
     }
 
     renderMetadata(null);
     renderDetection(null);
     updateCompareMode();
-    setProgress(0, '等待视频');
+    setProgress(0, 'Waiting for video');
     setupEvents();
     updateButtons();
     await consumePendingVideoHandoff();

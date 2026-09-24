@@ -1,175 +1,232 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex, nofollow">
-  <title>Gemini 视频水印本地处理 MVP</title>
+  <title>Unmark Me — Video</title>
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231d1d1f'/%3E%3Cpath d='M16 7.5l-2 6.5-6.5 2 6.5 2 2 6.5 2-6.5 6.5-2-6.5-2z' fill='%23fff'/%3E%3C/svg%3E">
   <style>
+    /* Unmark Me — video workspace. Tokens mirror dev-preview.css so both pages
+       read as one app; kept inline because the SDK ships this page on its own. */
     :root {
-      color-scheme: light;
-      --bg: #f8fafc;
-      --panel: #ffffff;
-      --panel-2: #f1f5f9;
-      --text: #0f172a;
-      --text-muted: #64748b;
-      --border: #e2e8f0;
-      --border-hover: #cbd5e1;
-      --primary: #0f172a;
-      --primary-hover: #334155;
-      --accent: #10b981;
-      --accent-hover: #059669;
-      --danger: #ef4444;
-      --warn: #f59e0b;
-      --success: #10b981;
-      --radius-sm: 6px;
-      --radius-md: 10px;
-      --radius-lg: 14px;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color-scheme: light dark;
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --fill: rgba(120, 120, 128, 0.12);
+      --fill-hover: rgba(120, 120, 128, 0.18);
+      --fill-press: rgba(120, 120, 128, 0.24);
+      --label: #1d1d1f;
+      --label-2: #6e6e73;
+      --label-3: #86868b;
+      --separator: rgba(0, 0, 0, 0.08);
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --accent-press: #006edb;
+      --accent-tint: rgba(0, 113, 227, 0.1);
+      --success: #248a3d;
+      --warning: #b25000;
+      --danger: #d70015;
+      --nav-material: rgba(245, 245, 247, 0.72);
+      --stage: #0b0b0c;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.07);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 14px;
+      --radius-sm: 10px;
+      --radius-pill: 980px;
+      --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --fast: 120ms;
+      --base: 240ms;
+      --slow: 480ms;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
 
-    * { box-sizing: border-box; }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #000000;
+        --surface: #161617;
+        --fill: rgba(120, 120, 128, 0.24);
+        --fill-hover: rgba(120, 120, 128, 0.32);
+        --fill-press: rgba(120, 120, 128, 0.4);
+        --label: #f5f5f7;
+        --label-2: #a1a1a6;
+        --label-3: #86868b;
+        --separator: rgba(255, 255, 255, 0.1);
+        --accent: #0a84ff;
+        --accent-hover: #2b95ff;
+        --accent-press: #0077ed;
+        --accent-tint: rgba(10, 132, 255, 0.16);
+        --success: #30d158;
+        --warning: #ff9f0a;
+        --danger: #ff453a;
+        --nav-material: rgba(22, 22, 23, 0.72);
+        --stage: #0b0b0c;
+        --shadow-sm: 0 0 0 1px rgba(255, 255, 255, 0.06);
+        --shadow-md: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 12px 32px rgba(0, 0, 0, 0.5);
+      }
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
     body {
       margin: 0;
       min-height: 100vh;
       background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
+      color: var(--label);
+      font: 400 1rem/1.47 var(--font);
+      letter-spacing: -0.011em;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
-    /* Typography */
+    ::selection { background: var(--accent-tint); }
+    a { color: inherit; text-decoration: none; }
+    p { margin: 0; }
+    button, input, select { font: inherit; color: inherit; }
+    [hidden] { display: none !important; }
+
+    :focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+      outline-offset: 2px;
+    }
+
+    /* ---------- Navigation ---------- */
+
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: var(--nav-material);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      backdrop-filter: saturate(180%) blur(20px);
+      box-shadow: 0 1px 0 var(--separator);
+    }
+    .nav-inner {
+      max-width: 1240px;
+      height: 52px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .brand { display: inline-flex; align-items: center; gap: 10px; border-radius: var(--radius-sm); }
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: var(--label);
+      color: var(--bg);
+    }
+    .brand-mark svg { width: 16px; height: 16px; fill: currentColor; }
+    .brand-name { font-size: 1.0625rem; font-weight: 600; letter-spacing: -0.022em; }
+    .nav-links { display: flex; align-items: center; gap: 4px; }
+    .nav-link {
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      font-size: 0.875rem;
+      color: var(--label-2);
+      transition: color var(--fast) var(--ease), background-color var(--fast) var(--ease);
+    }
+    .nav-link:hover { color: var(--label); }
+    .nav-link[aria-current="page"] { color: var(--label); font-weight: 500; background: var(--fill); }
+
+    /* ---------- Page ---------- */
+
+    .shell {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 56px 24px 96px;
+    }
+    .page-header { max-width: 720px; margin-bottom: 40px; }
     h1 {
       margin: 0;
-      font-size: 1.5rem;
+      font-family: var(--font-display);
+      font-size: clamp(2.25rem, 5vw, 3rem);
       font-weight: 700;
-      letter-spacing: -0.02em;
-      color: #0f172a;
+      line-height: 1.08;
+      letter-spacing: -0.032em;
     }
-    header p, .muted {
-      margin: 4px 0 0;
-      color: var(--text-muted);
-      font-size: 0.9rem;
+    .page-header p {
+      margin-top: 12px;
+      font-size: clamp(1.0625rem, 2vw, 1.1875rem);
+      line-height: 1.45;
+      letter-spacing: -0.014em;
+      color: var(--label-2);
     }
+    .muted { color: var(--label-2); font-size: 0.875rem; }
 
-    /* Layout */
-    .shell {
-      width: min(1360px, calc(100% - 48px));
-      margin: 0 auto;
-      padding: 32px 0 40px;
-    }
-    header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 24px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 24px;
-    }
     .layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 380px;
+      grid-template-columns: minmax(0, 1fr) 360px;
       gap: 24px;
       align-items: start;
     }
+    .side { display: flex; flex-direction: column; gap: 20px; }
 
-    /* Panels */
+    /* ---------- Cards ---------- */
+
     .panel {
-      background: var(--panel);
+      background: var(--surface);
       border-radius: var(--radius-lg);
-      border: 1px solid var(--border);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+      box-shadow: var(--shadow-md);
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
     }
     .panel-head {
-      padding: 16px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-      font-size: 0.95rem;
-      font-weight: 600;
-      background: #fcfcfd;
-    }
-
-    /* Buttons */
-    button, input, select { font: inherit; }
-    button, .download-link {
-      height: 38px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
-      background: var(--panel);
-      color: var(--text);
-      padding: 0 16px;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      font-weight: 500;
-      font-size: 0.9rem;
-      text-decoration: none;
-      transition: all 0.15s ease;
-      white-space: nowrap;
-    }
-    button:hover:not(:disabled), .download-link:hover:not([aria-disabled="true"]) {
-      background: #f8fafc;
-      border-color: var(--border-hover);
-    }
-    button:focus-visible, .download-link:focus-visible, input:focus-visible, select:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: 2px;
-    }
-    button:active:not(:disabled) {
-      transform: scale(0.98);
-    }
-    button:disabled, .download-link[aria-disabled="true"] {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .primary {
-      border: none;
-      background: var(--primary);
-      color: #fff;
-    }
-    .primary:hover:not(:disabled) {
-      background: var(--primary-hover);
-      border: none;
-    }
-
-    /* Actions Grid */
-    .actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
       gap: 12px;
+      padding: 18px 20px 0;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: var(--label-2);
     }
-    .actions .primary, .actions .download-link { grid-column: span 2; }
-    .actions .download-link {
-      background: var(--accent);
-      color: white;
-      border: none;
+    .panel-title {
+      font-size: 1.0625rem;
+      font-weight: 600;
+      letter-spacing: -0.021em;
+      text-transform: none;
+      color: var(--label);
     }
-    .actions .download-link:hover:not([aria-disabled="true"]) {
-      background: var(--accent-hover);
+    #progressText {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--label-2);
+      font-variant-numeric: tabular-nums;
     }
 
-    /* Workspace Player */
+    /* ---------- Player ---------- */
+
+    .workspace .panel-head { padding: 16px 20px; }
     .compare-player {
       position: relative;
+      margin: 0 12px;
       aspect-ratio: 16 / 9;
-      background: #e2e8f0;
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 1px;
+      gap: 2px;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--stage);
     }
     .compare-pane {
       position: relative;
       overflow: hidden;
-      background: #0f172a;
+      background: var(--stage);
     }
     .compare-pane video {
       position: absolute;
@@ -179,377 +236,421 @@
       object-fit: contain;
       object-position: center center;
     }
-    .compare-pane[hidden], .badge[hidden], .empty[hidden] { display: none; }
-
     .badge {
       position: absolute;
-      top: 16px;
-      left: 16px;
+      top: 12px;
+      left: 12px;
       z-index: 6;
-      border-radius: 6px;
       padding: 4px 10px;
-      background: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(4px);
+      border-radius: var(--radius-pill);
+      background: rgba(0, 0, 0, 0.5);
+      -webkit-backdrop-filter: blur(12px) saturate(160%);
+      backdrop-filter: blur(12px) saturate(160%);
       color: #fff;
-      font-size: 0.8rem;
+      font-size: 0.75rem;
       font-weight: 600;
+      letter-spacing: 0.01em;
       pointer-events: none;
-      letter-spacing: 0.02em;
     }
     .empty {
       position: absolute;
       inset: 0;
+      z-index: 4;
       display: grid;
       place-items: center;
-      color: var(--text-muted);
-      font-size: 0.95rem;
-      text-align: center;
       padding: 24px;
-      z-index: 4;
+      text-align: center;
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.55);
+      background: radial-gradient(120% 90% at 50% 40%, #1c1c1e 0%, var(--stage) 70%);
       pointer-events: none;
-      background: #f8fafc;
     }
 
-    /* Player Controls */
     .compare-controls {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr) auto;
       align-items: center;
       gap: 16px;
-      padding: 12px 20px;
-      background: #fcfcfd;
-      border-top: 1px solid var(--border);
+      padding: 14px 20px 16px;
     }
-    .compare-controls .play-toggle {
-      width: 32px;
-      height: 32px;
+    .play-toggle {
+      width: 40px;
+      height: 40px;
       padding: 0;
+      border: 0;
       border-radius: 50%;
-      border: 1px solid var(--border);
-      background: #fff;
-      color: var(--primary);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--label);
+      color: var(--bg);
+      cursor: pointer;
+      transition: transform var(--fast) var(--ease), opacity var(--base) var(--ease);
     }
-    .compare-controls .play-toggle:hover:not(:disabled) {
-      border-color: var(--primary);
-      background: #f8fafc;
-    }
+    .play-toggle:active:not(:disabled) { transform: scale(0.92); }
+    .play-toggle:disabled { opacity: 0.25; cursor: default; }
     .play-toggle::before {
       content: "";
-      width: 0; height: 0;
-      margin-left: 2px;
-      border-top: 6px solid transparent;
-      border-bottom: 6px solid transparent;
-      border-left: 9px solid currentColor;
+      width: 0;
+      height: 0;
+      margin-left: 3px;
+      border-top: 7px solid transparent;
+      border-bottom: 7px solid transparent;
+      border-left: 11px solid currentColor;
     }
     .play-toggle[data-playing="true"]::before,
     .play-toggle[data-playing="true"]::after {
       content: "";
-      width: 3px; height: 12px;
-      margin: 0 1.5px;
+      width: 4px;
+      height: 14px;
+      margin: 0 2px;
       border: 0;
+      border-radius: 1px;
       background: currentColor;
     }
 
     input[type="range"] {
       -webkit-appearance: none;
+      appearance: none;
       width: 100%;
-      height: 4px;
-      background: var(--border);
-      border-radius: 2px;
+      height: 24px;
+      margin: 0;
+      background: transparent;
       cursor: pointer;
+    }
+    input[type="range"]:disabled { cursor: default; opacity: 0.4; }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 4px;
+      border-radius: 2px;
+      background: var(--fill-press);
+    }
+    input[type="range"]::-moz-range-track {
+      height: 4px;
+      border-radius: 2px;
+      background: var(--fill-press);
     }
     input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 14px;
-      height: 14px;
+      width: 16px;
+      height: 16px;
+      margin-top: -6px;
       border-radius: 50%;
-      background: var(--primary);
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-      transition: transform 0.1s;
+      background: #fff;
+      box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.22);
+      transition: transform var(--fast) var(--ease);
     }
-    input[type="range"]::-webkit-slider-thumb:hover {
-      transform: scale(1.15);
+    input[type="range"]::-moz-range-thumb {
+      width: 16px;
+      height: 16px;
+      border: 0;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.22);
     }
+    input[type="range"]:active:not(:disabled)::-webkit-slider-thumb { transform: scale(1.15); }
 
     .time-label {
-      font-size: 0.85rem;
-      font-variant-numeric: tabular-nums;
-      color: var(--text-muted);
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       min-width: 44px;
       text-align: right;
+      font-size: 0.8125rem;
+      font-variant-numeric: tabular-nums;
+      color: var(--label-2);
     }
 
-    /* Right Side Layout */
-    .side {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
+    /* ---------- Drop zone ---------- */
 
-    /* Batch queue (multiple videos) */
+    .dropzone {
+      position: relative;
+      padding: 32px 24px 28px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      box-shadow: var(--shadow-md);
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      transition: transform var(--base) var(--ease-out), box-shadow var(--base) var(--ease-out), background-color var(--base) var(--ease);
+    }
+    .dropzone::after {
+      content: "";
+      position: absolute;
+      inset: 8px;
+      border-radius: calc(var(--radius-lg) - 8px);
+      border: 1.5px dashed var(--separator);
+      pointer-events: none;
+      transition: border-color var(--base) var(--ease);
+    }
+    .dropzone:hover { transform: translateY(-2px); }
+    .dropzone:active { transform: scale(0.99); transition-duration: var(--fast); }
+    .dropzone[data-dragging="true"] {
+      background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+      box-shadow: 0 0 0 3px var(--accent), var(--shadow-md);
+    }
+    .dropzone[data-dragging="true"]::after { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+    .dropzone-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 14px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--accent-tint);
+      color: var(--accent);
+    }
+    .dropzone-icon svg { width: 22px; height: 22px; }
+    .dropzone strong {
+      display: block;
+      font-size: 1.0625rem;
+      font-weight: 600;
+      letter-spacing: -0.021em;
+    }
+    .dropzone .muted { display: block; margin-top: 4px; font-size: 0.8125rem; line-height: 1.4; }
+
+    /* ---------- Batch queue ---------- */
+
     .batch-queue {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      margin-top: 10px;
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      padding: 6px 0;
     }
     .batch-item {
       display: flex;
       justify-content: space-between;
-      gap: 10px;
-      font-size: 13px;
-      padding: 6px 10px;
-      border-radius: 8px;
-      background: rgba(148, 163, 184, 0.12);
+      gap: 12px;
+      padding: 10px 20px;
+      font-size: 0.875rem;
     }
-    .batch-item .batch-name {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .batch-item .batch-state { flex: none; opacity: 0.85; }
-    .batch-item[data-status="processing"] .batch-state { color: #2563eb; }
-    .batch-item[data-status="done"] .batch-state { color: #16a34a; }
-    .batch-item[data-status="error"] .batch-state { color: #dc2626; }
+    .batch-item + .batch-item { box-shadow: inset 0 1px 0 var(--separator); }
+    .batch-item .batch-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .batch-item .batch-state { flex: none; color: var(--label-2); }
+    .batch-item[data-status="processing"] .batch-state { color: var(--accent); }
+    .batch-item[data-status="done"] .batch-state { color: var(--success); }
+    .batch-item[data-status="error"] .batch-state { color: var(--danger); }
 
-    /* Dropzone */
-    .dropzone {
-      border: 2px dashed #cbd5e1;
-      background: #f8fafc;
-      border-radius: var(--radius-lg);
-      padding: 28px 24px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .dropzone:hover, .dropzone[data-dragging="true"] {
-      background: #f0fdf4;
-      border-color: var(--accent);
-    }
-    .dropzone strong {
-      display: block;
-      font-size: 1.05rem;
-      color: var(--text);
-      margin-bottom: 8px;
-    }
-    .dropzone .muted {
-      font-size: 0.85rem;
-    }
+    /* ---------- Controls ---------- */
 
-    /* Controls Area */
-    .controls {
-      display: grid;
-      gap: 16px;
-      padding: 20px;
-    }
+    .controls { display: grid; gap: 16px; padding: 16px 20px 20px; }
 
-    .auto-summary {
-      background: #f8fafc;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: 14px;
-      color: var(--text-muted);
-      font-size: 0.85rem;
-    }
+    .auto-summary { font-size: 0.875rem; line-height: 1.45; color: var(--label-2); }
     .auto-summary strong {
       display: block;
-      color: var(--text);
-      font-size: 0.95rem;
-      margin-bottom: 4px;
+      margin-bottom: 2px;
+      font-size: 1.0625rem;
+      font-weight: 600;
+      letter-spacing: -0.021em;
+      color: var(--label);
     }
 
-    .internal-controls {
-      display: none;
-    }
-    .field {
-      display: grid;
-      gap: 8px;
-    }
-    label {
-      color: var(--text);
-      font-size: 0.85rem;
-      font-weight: 500;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    label span {
-      color: var(--text-muted);
-      font-variant-numeric: tabular-nums;
-    }
-
-    input[type="number"], select {
-      width: 100%;
-      height: 38px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
-      background: #fff;
-      color: var(--text);
-      padding: 0 12px;
-      transition: border-color 0.15s;
-      font-size: 0.9rem;
-    }
-    input[type="number"]:hover, select:hover {
-      border-color: var(--border-hover);
-    }
-
-    .check {
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 10px;
-      cursor: pointer;
-      font-weight: normal;
-    }
-    .check input {
-      width: 16px;
-      height: 16px;
-      accent-color: var(--accent);
-      cursor: pointer;
-      margin: 0;
-    }
-
-    .preset-row button {
-      width: 100%;
-      background: #f8fafc;
-      color: var(--text);
-      border-color: var(--border);
-      justify-content: flex-start;
-    }
-
-    /* Progress & Status */
     .progress {
-      height: 6px;
-      background: var(--panel-2);
-      border-radius: 3px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--fill);
       overflow: hidden;
     }
     .progress span {
       display: block;
       width: 0;
       height: 100%;
+      border-radius: inherit;
       background: var(--accent);
-      transition: width 0.2s ease-out;
+      transition: width var(--slow) var(--ease-out);
     }
 
     .status {
-      min-height: 44px;
-      border-radius: var(--radius-md);
-      padding: 12px 16px;
-      background: var(--panel-2);
-      color: var(--text-muted);
-      font-size: 0.85rem;
-      border: 1px solid transparent;
+      font-size: 0.8125rem;
+      line-height: 1.45;
+      color: var(--label-2);
     }
-    .status[data-tone="error"] { color: var(--danger); background: #fef2f2; border-color: #fca5a5; }
-    .status[data-tone="warn"] { color: var(--warn); background: #fffbeb; border-color: #fcd34d; }
-    .status[data-tone="success"] { color: var(--success); background: #f0fdf4; border-color: #86efac; }
+    .status:empty { display: none; }
+    .status[data-tone="error"] { color: var(--danger); }
+    .status[data-tone="warn"] { color: var(--warning); }
+    .status[data-tone="success"] { color: var(--success); }
 
-    /* Metadata tables (dl) */
-    dl {
-      margin: 0;
+    .actions {
       display: grid;
-      padding: 4px 0;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
     }
-    dl div {
-      min-height: 36px;
-      display: grid;
-      grid-template-columns: 120px minmax(0, 1fr);
+    .actions .primary, .actions .download-link { grid-column: 1 / -1; }
+
+    button, .download-link {
+      height: 36px;
+      padding: 0 14px;
+      display: inline-flex;
       align-items: center;
-      gap: 12px;
-      padding: 0 20px;
-      font-size: 0.85rem;
-      border-bottom: 1px solid var(--border);
+      justify-content: center;
+      gap: 8px;
+      border: 0;
+      border-radius: var(--radius-pill);
+      background: var(--fill);
+      color: var(--label);
+      font-size: 0.875rem;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      text-decoration: none;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease), opacity var(--base) var(--ease), transform var(--fast) var(--ease);
     }
-    dl div:last-child { border-bottom: none; }
-    dt { color: var(--text-muted); }
+    button:hover:not(:disabled), .download-link:hover:not([aria-disabled="true"]) { background: var(--fill-hover); }
+    button:active:not(:disabled), .download-link:active:not([aria-disabled="true"]) { transform: scale(0.97); background: var(--fill-press); }
+    button:disabled, .download-link[aria-disabled="true"] { opacity: 0.4; cursor: default; }
+
+    .actions .primary, .actions .download-link {
+      height: 44px;
+      font-size: 1.0625rem;
+      letter-spacing: -0.016em;
+    }
+    .primary { background: var(--accent); color: #fff; }
+    .primary:hover:not(:disabled) { background: var(--accent-hover); }
+    .primary:active:not(:disabled) { background: var(--accent-press); }
+    .download-link { background: var(--accent-tint); color: var(--accent); }
+    .download-link:hover:not([aria-disabled="true"]) { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+    .download-link[aria-disabled="true"] { background: var(--fill); color: var(--label-2); }
+    .actions svg { width: 18px; height: 18px; flex: none; }
+
+    .internal-controls { display: none; }
+
+    /* ---------- Details lists ---------- */
+
+    dl { margin: 0; padding: 8px 0 8px; }
+    dl div {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 0 20px;
+      padding: 10px 0;
+      font-size: 0.875rem;
+    }
+    dl div + div { box-shadow: inset 0 1px 0 var(--separator); }
+    dt { color: var(--label-2); }
     dd {
       margin: 0;
-      color: var(--text);
+      text-align: right;
       font-variant-numeric: tabular-nums;
       overflow-wrap: anywhere;
     }
+    #metadata > .muted, #detection > .muted { padding: 10px 20px 18px; }
 
     .note {
-      padding: 16px 20px;
-      color: var(--text-muted);
-      font-size: 0.85rem;
-      background: #fcfcfd;
-      border-top: 1px solid var(--border);
+      padding: 0 20px 20px;
+      font-size: 0.75rem;
+      line-height: 1.45;
+      color: var(--label-3);
     }
 
-    /* Responsive */
+    /* ---------- Responsive ---------- */
+
     @media (max-width: 1024px) {
-      .layout { grid-template-columns: 1fr; }
-      .shell { padding: 24px 0; }
+      .layout { grid-template-columns: 1fr; gap: 20px; }
+      /* Put the file picker first on narrow screens, above the player. */
+      .side { display: contents; }
+      #dropzone { order: -1; }
     }
-    @media (max-width: 640px) {
-      .shell { width: calc(100% - 32px); }
-      header { flex-direction: column; gap: 12px; }
-      .actions { grid-template-columns: 1fr; }
-      .actions .primary, .actions .download-link { grid-column: auto; }
-      dl div { grid-template-columns: 100px minmax(0, 1fr); }
+    @media (max-width: 600px) {
+      .nav-inner { padding: 0 16px; }
+      .nav-link { padding: 6px 10px; }
+      .shell { padding: 36px 16px 64px; }
+      .page-header { margin-bottom: 28px; }
+      .compare-player { margin: 0 8px; grid-template-columns: 1fr; aspect-ratio: auto; }
+      .compare-pane { aspect-ratio: 16 / 9; }
+      .compare-controls { padding: 12px 16px 14px; gap: 12px; }
+    }
+
+    /* ---------- Accessibility preferences ---------- */
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; }
+      .dropzone:hover { transform: none; }
+    }
+    @media (prefers-reduced-transparency: reduce) {
+      .nav { background: var(--bg); -webkit-backdrop-filter: none; backdrop-filter: none; }
+      .badge { background: #1d1d1f; -webkit-backdrop-filter: none; backdrop-filter: none; }
+    }
+    @media (prefers-contrast: more) {
+      :root { --separator: rgba(0, 0, 0, 0.3); --label-2: #3a3a3c; --label-3: #48484a; }
+      .panel, .dropzone, .batch-queue { box-shadow: none; border: 1px solid var(--label-3); }
     }
   </style>
 </head>
 <body>
+  <header class="nav">
+    <div class="nav-inner">
+      <a href="./" class="brand" aria-label="Unmark Me home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3.5l-1.7 5.3-5.3 1.7 5.3 1.7 1.7 5.3 1.7-5.3 5.3-1.7-5.3-1.7z"/></svg>
+        </span>
+        <span class="brand-name">Unmark Me</span>
+      </a>
+      <nav class="nav-links" aria-label="Main">
+        <a href="./" class="nav-link">Images</a>
+        <a href="./video-preview.html" class="nav-link" aria-current="page">Video</a>
+        <a href="https://github.com/aiglassbox/Unmark-Me" target="_blank" rel="noopener noreferrer" class="nav-link">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
   <div class="shell">
-    <header>
-      <div>
-        <h1>Gemini 视频水印本地处理 MVP</h1>
-        <p>WebCodecs + Mediabunny，文件只在浏览器内解码、逐帧处理、重新封装 MP4。</p>
-      </div>
-      <p>当前范围：右下角 72px Gemini/Veo 风格水印；视频轨重编码，兼容音频轨自动透传。</p>
+    <header class="page-header">
+      <h1>Clean your Gemini videos.</h1>
+      <p>Removes the Gemini / Veo watermark from the bottom-right corner, frame by frame, right in your browser. Compatible audio is kept as-is.</p>
     </header>
 
     <main class="layout">
-      <section class="workspace" aria-label="视频对比">
+      <section class="workspace" aria-label="Video comparison">
         <div class="panel">
-          <div class="panel-head"><span>Before / After 对比</span><span id="progressText">等待视频</span></div>
+          <div class="panel-head"><span class="panel-title">Before &amp; After</span><span id="progressText">Waiting for video</span></div>
           <div id="comparePlayer" class="compare-player">
             <div class="compare-pane">
               <video id="originalVideo" playsinline preload="metadata"></video>
               <span class="badge">Before</span>
-              <div id="originalEmpty" class="empty">选择或拖入图片 / 视频</div>
+              <div id="originalEmpty" class="empty">Choose or drop a video to begin</div>
             </div>
             <div class="compare-pane">
               <video id="processedVideo" playsinline preload="metadata" muted></video>
               <span id="afterBadge" class="badge" hidden>After</span>
-              <div id="processedEmpty" class="empty">导出完成后显示右侧对比</div>
+              <div id="processedEmpty" class="empty">The cleaned video appears here after export</div>
             </div>
           </div>
           <div class="compare-controls">
-            <button id="playPauseBtn" class="play-toggle" type="button" data-playing="false" aria-label="播放" disabled></button>
-            <input id="scrubber" type="range" min="0" max="1000" value="0" aria-label="播放进度" disabled>
+            <button id="playPauseBtn" class="play-toggle" type="button" data-playing="false" aria-label="Play" disabled></button>
+            <input id="scrubber" type="range" min="0" max="1000" value="0" aria-label="Playback position" disabled>
             <span id="timeLabel" class="time-label">0:00</span>
           </div>
         </div>
       </section>
 
-      <aside class="side" aria-label="处理设置">
-        <div id="dropzone" class="dropzone" data-dragging="false" role="button" tabindex="0">
-          <strong>选择文件</strong>
-          <span class="muted">视频会在本页处理，图片会回到单图对比页。10 秒 1080p MP4 样例最适合当前 MVP。</span>
+      <aside class="side" aria-label="Processing settings">
+        <div id="dropzone" class="dropzone" data-dragging="false" role="button" tabindex="0" aria-label="Choose a video to clean">
+          <div class="dropzone-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M4 15v2.5A2.5 2.5 0 006.5 20h11a2.5 2.5 0 002.5-2.5V15"/></svg>
+          </div>
+          <strong>Choose a video</strong>
+          <span class="muted">or drop it here · MP4, WebM, MOV<br>Short 1080p clips work best.</span>
           <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime,video/*" multiple hidden>
         </div>
-        <div id="batchQueue" class="batch-queue" aria-label="批量队列" hidden></div>
+        <div id="batchQueue" class="batch-queue" aria-label="Batch queue" hidden></div>
 
         <div class="panel">
-          <div class="panel-head">自动处理</div>
           <div class="controls">
             <div id="autoPresetSummary" class="auto-summary">
-              <strong>AI 自动处理</strong>
-              <span>选择视频后自动检测水印，导出时使用本地 AI 模型清理。</span>
+              <strong>AI cleanup</strong>
+              <span>The watermark is detected automatically when you choose a video, and a local AI model cleans it up on export.</span>
             </div>
-            <div class="progress" aria-label="处理进度"><span id="progressBar"></span></div>
-            <div id="status" class="status" data-tone="info"></div>
+            <div class="progress" aria-label="Processing progress"><span id="progressBar"></span></div>
+            <div id="status" class="status" data-tone="info" role="status" aria-live="polite"></div>
             <div class="actions">
-              <button id="detectBtn" type="button">检测水印</button>
-              <button id="resetBtn" type="button">重置</button>
-              <button id="cancelBtn" type="button" disabled>停止处理</button>
-              <button id="processBtn" class="primary" type="button">自动导出无水印视频</button>
-              <a id="downloadBtn" class="download-link" aria-disabled="true">下载结果</a>
+              <button id="processBtn" class="primary" type="button">Export clean video</button>
+              <a id="downloadBtn" class="download-link" aria-disabled="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+                Download result
+              </a>
+              <button id="detectBtn" type="button">Detect</button>
+              <button id="cancelBtn" type="button" disabled>Stop</button>
+              <button id="resetBtn" type="button">Reset</button>
             </div>
             <div class="internal-controls" hidden>
               <span id="alphaGainValue">1.00</span>
@@ -557,18 +658,18 @@
               <input id="adaptiveAlpha" type="checkbox">
               <input id="highQualityCleanup" type="checkbox">
               <select id="denoiseBackend">
-                <option value="none">关闭</option>
-                <option value="canvas-edge-denoise">Canvas 边缘去噪</option>
-                <option value="canvas-edge-band-denoise">Canvas 边缘带去噪</option>
-                <option value="canvas-edge-core-denoise">Canvas 边缘核心去噪</option>
-                <option value="canvas-footprint-polish">Canvas 足迹抛光</option>
-                <option value="canvas-temporal-delta-stabilize">Canvas 时序 Delta 稳定</option>
-                <option value="canvas-temporal-match-delta-stabilize">Canvas 匹配 Delta 稳定</option>
-                <option value="canvas-temporal-stabilize">Canvas 时序稳定</option>
-                <option value="canvas-texture-repair">Canvas 纹理回填</option>
+                <option value="none">Off</option>
+                <option value="canvas-edge-denoise">Canvas edge denoise</option>
+                <option value="canvas-edge-band-denoise">Canvas edge-band denoise</option>
+                <option value="canvas-edge-core-denoise">Canvas edge-core denoise</option>
+                <option value="canvas-footprint-polish">Canvas footprint polish</option>
+                <option value="canvas-temporal-delta-stabilize">Canvas temporal delta stabilize</option>
+                <option value="canvas-temporal-match-delta-stabilize">Canvas matched delta stabilize</option>
+                <option value="canvas-temporal-stabilize">Canvas temporal stabilize</option>
+                <option value="canvas-texture-repair">Canvas texture repair</option>
                 <option value="allenk-fdncnn-browser-spike">AI FDnCNN ONNX</option>
               </select>
-              <button id="relocatedReviewPresetBtn" type="button">迁移锚点复核预设</button>
+              <button id="relocatedReviewPresetBtn" type="button">Relocated-anchor review preset</button>
               <span id="edgeDenoiseStrengthValue">0.25</span>
               <input id="edgeDenoiseStrength" type="range" min="0" max="1" step="0.05">
               <span id="residualCleanupValue">1.50</span>
@@ -578,16 +679,16 @@
               <input id="allowLowConfidence" type="checkbox">
             </div>
           </div>
-          <div class="note">导出会重新编码视频轨，并在 MP4 支持原音频编码时透传音频轨。</div>
+          <p class="note">Export re-encodes the video track and keeps the original audio when MP4 supports its codec.</p>
         </div>
 
         <div class="panel">
-          <div class="panel-head">视频信息</div>
+          <div class="panel-head">Video info</div>
           <div id="metadata"></div>
         </div>
 
         <div class="panel">
-          <div class="panel-head">检测结果</div>
+          <div class="panel-head">Detection</div>
           <div id="detection"></div>
         </div>
       </aside>
