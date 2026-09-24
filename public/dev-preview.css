@@ -747,8 +747,7 @@ img { -webkit-user-drag: none; }
   color: var(--label-3);
 }
 
-.footer a { color: var(--label-2); }
-.footer a:hover { color: var(--label); text-decoration: underline; text-underline-offset: 2px; }
+.footer-name { color: var(--label-2); font-weight: 500; }
 
 /* ---------- Loading overlay ---------- */
 
