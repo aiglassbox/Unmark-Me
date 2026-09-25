@@ -35,7 +35,6 @@ const TEXT = {
     mixedQualityWarning: 'Best result generated. There may be faint traces or slight distortion.',
     unsupported: 'Your browser does not support copying images.',
     copied: 'Copied!',
-    copy: 'Copy result',
     copyFailed: 'Copy failed',
     unsupportedFile: 'Please choose a JPG, PNG or WebP image, or an MP4, WebM or MOV video.',
     fileTooLarge: 'Images larger than 20MB are not supported. Videos open in the video workflow.',
@@ -217,7 +216,13 @@ function reset() {
     copyBtn.style.display = 'none';
     downloadBtn.style.display = 'none';
     setStatusMessage('');
-    uploadArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setView('home');
+}
+
+// The page is a single-screen app: the hero shows on the home view and gives
+// way to the result views, which size themselves to the viewport.
+function setView(view) {
+    document.body.dataset.view = view;
 }
 
 function handleFileSelect(e) {
@@ -279,6 +284,7 @@ async function handleFiles(files) {
     downloadBtn.style.display = 'none';
     singlePreview.dataset.state = 'processing';
     singlePreview.style.display = 'grid';
+    setView('single');
     processSingle(currentItem);
 }
 
@@ -302,11 +308,11 @@ function processBatch(files) {
 
     imageQueue = files.map(createDebugImageItem);
     singlePreview.style.display = 'none';
-    multiPreview.style.display = 'block';
+    multiPreview.style.display = 'flex';
+    setView('batch');
     imageList.innerHTML = '';
     updateProgress();
     imageQueue.forEach((item) => createImageCard(item));
-    multiPreview.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     const batchId = activeBatchId;
     processQueue(batchId);
@@ -415,7 +421,6 @@ async function processSingle(item) {
         downloadBtn.onclick = () => downloadImage(item);
 
         renderSingleProcessedMeta(item);
-        singlePreview.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (error) {
         console.error(error);
         delete singlePreview.dataset.state;
@@ -450,7 +455,7 @@ function createImageCard(item) {
             </button>
             <button id="copy-${item.id}" class="btn btn-secondary btn-compact" style="display: none;">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6.5A2.5 2.5 0 0013.5 4h-7A2.5 2.5 0 004 6.5v7A2.5 2.5 0 006.5 16H8"/></svg>
-                <span>${TEXT.copy}</span>
+                <span>Copy</span>
             </button>
         </div>
     `;
@@ -582,13 +587,14 @@ async function copyImage(item, targetBtn = copyBtn) {
 
         const span = targetBtn.querySelector('span');
         const svg = targetBtn.querySelector('svg');
+        const originalLabel = span.textContent;
         const originalSvgPath = svg.innerHTML;
 
         span.textContent = TEXT.copied;
         svg.innerHTML = '<path d="M5 13l4 4L19 7"></path>';
 
         setTimeout(() => {
-            span.textContent = TEXT.copy;
+            span.textContent = originalLabel;
             svg.innerHTML = originalSvgPath;
         }, 2000);
     } catch (err) {

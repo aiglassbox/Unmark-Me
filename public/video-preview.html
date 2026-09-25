@@ -74,9 +74,14 @@
 
     *, *::before, *::after { box-sizing: border-box; }
 
+    html, body { height: 100%; }
     body {
       margin: 0;
-      min-height: 100vh;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
       background: var(--bg);
       color: var(--label);
       font: 400 1rem/1.47 var(--font);
@@ -142,36 +147,56 @@
 
     /* ---------- Page ---------- */
 
+    /* One-screen app: header, player and controls share the viewport. */
     .shell {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
       max-width: 1240px;
       margin: 0 auto;
-      padding: 56px 24px 96px;
+      padding: clamp(16px, 3vh, 28px) 24px 20px;
+      display: flex;
+      flex-direction: column;
     }
-    .page-header { max-width: 720px; margin-bottom: 40px; }
+    .page-header { flex: none; margin-bottom: clamp(14px, 2.6vh, 24px); }
     h1 {
       margin: 0;
       font-family: var(--font-display);
-      font-size: clamp(2.25rem, 5vw, 3rem);
+      font-size: clamp(1.75rem, min(4vw, 4.4vh), 2.5rem);
       font-weight: 700;
       line-height: 1.08;
-      letter-spacing: -0.032em;
+      letter-spacing: -0.03em;
     }
     .page-header p {
-      margin-top: 12px;
-      font-size: clamp(1.0625rem, 2vw, 1.1875rem);
+      margin-top: 6px;
+      font-size: 1rem;
       line-height: 1.45;
-      letter-spacing: -0.014em;
+      letter-spacing: -0.012em;
       color: var(--label-2);
     }
     .muted { color: var(--label-2); font-size: 0.875rem; }
 
     .layout {
+      flex: 1;
+      min-height: 0;
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 360px;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      grid-template-rows: minmax(0, 1fr);
       gap: 24px;
-      align-items: start;
     }
-    .side { display: flex; flex-direction: column; gap: 20px; }
+    .workspace { min-height: 0; display: flex; }
+    .workspace > .panel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+    .side {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      /* Room for card shadows; the details card absorbs any shortfall. */
+      margin: -6px;
+      padding: 6px;
+      overflow: hidden;
+    }
+    .side > * { flex: none; }
 
     /* ---------- Cards ---------- */
 
@@ -214,8 +239,9 @@
     .workspace .panel-head { padding: 16px 20px; }
     .compare-player {
       position: relative;
+      flex: 1;
+      min-height: 0;
       margin: 0 12px;
-      aspect-ratio: 16 / 9;
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 2px;
@@ -267,6 +293,7 @@
     }
 
     .compare-controls {
+      flex: none;
       display: grid;
       grid-template-columns: auto minmax(0, 1fr) auto;
       align-items: center;
@@ -361,11 +388,15 @@
 
     .dropzone {
       position: relative;
-      padding: 32px 24px 28px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      column-gap: 14px;
+      padding: 12px 16px;
       border-radius: var(--radius-lg);
       background: var(--surface);
       box-shadow: var(--shadow-md);
-      text-align: center;
+      text-align: left;
       cursor: pointer;
       user-select: none;
       transition: transform var(--base) var(--ease-out), box-shadow var(--base) var(--ease-out), background-color var(--base) var(--ease);
@@ -387,9 +418,9 @@
     }
     .dropzone[data-dragging="true"]::after { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
     .dropzone-icon {
-      width: 48px;
-      height: 48px;
-      margin: 0 auto 14px;
+      grid-row: span 2;
+      width: 44px;
+      height: 44px;
       display: grid;
       place-items: center;
       border-radius: 50%;
@@ -403,7 +434,7 @@
       font-weight: 600;
       letter-spacing: -0.021em;
     }
-    .dropzone .muted { display: block; margin-top: 4px; font-size: 0.8125rem; line-height: 1.4; }
+    .dropzone .muted { display: block; margin-top: 1px; font-size: 0.8125rem; line-height: 1.4; }
 
     /* ---------- Batch queue ---------- */
 
@@ -431,7 +462,7 @@
 
     /* ---------- Controls ---------- */
 
-    .controls { display: grid; gap: 16px; padding: 16px 20px 20px; }
+    .controls { display: grid; gap: 10px; padding: 14px 20px 16px; }
 
     .auto-summary { font-size: 0.875rem; line-height: 1.45; color: var(--label-2); }
     .auto-summary strong {
@@ -468,12 +499,15 @@
     .status[data-tone="warn"] { color: var(--warning); }
     .status[data-tone="success"] { color: var(--success); }
 
+    /* Toolbar under the player: secondary actions left, primary right. */
     .actions {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      flex: none;
+      display: flex;
+      align-items: center;
       gap: 8px;
+      padding: 0 20px 16px;
     }
-    .actions .primary, .actions .download-link { grid-column: 1 / -1; }
+    .actions-spacer { flex: 1; }
 
     button, .download-link {
       height: 36px;
@@ -500,9 +534,9 @@
     button:disabled, .download-link[aria-disabled="true"] { opacity: 0.4; cursor: default; }
 
     .actions .primary, .actions .download-link {
-      height: 44px;
-      font-size: 1.0625rem;
-      letter-spacing: -0.016em;
+      height: 40px;
+      padding: 0 18px;
+      font-size: 0.9375rem;
     }
     .primary { background: var(--accent); color: #fff; }
     .primary:hover:not(:disabled) { background: var(--accent-hover); }
@@ -516,14 +550,49 @@
 
     /* ---------- Details lists ---------- */
 
-    dl { margin: 0; padding: 8px 0 8px; }
+    /* Details: one card, segmented between video info and detection. */
+    .details {
+      flex: 0 1 auto !important;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .segmented {
+      flex: none;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px;
+      margin: 10px 12px 2px;
+      padding: 2px;
+      border-radius: 9px;
+      background: var(--fill);
+    }
+    .segmented button {
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--label-2);
+      font-size: 0.8125rem;
+      font-weight: 500;
+    }
+    .segmented button:hover:not([aria-selected="true"]) { background: transparent; color: var(--label); }
+    .segmented button:active:not(:disabled) { transform: none; background: transparent; }
+    .segmented button[aria-selected="true"] {
+      background: var(--surface);
+      color: var(--label);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+    .details [role="tabpanel"] { min-height: 0; overflow-y: auto; }
+
+    dl { margin: 0; padding: 2px 0 6px; }
     dl div {
       display: flex;
       justify-content: space-between;
       gap: 12px;
       margin: 0 20px;
-      padding: 10px 0;
-      font-size: 0.875rem;
+      padding: 6px 0;
+      font-size: 0.8125rem;
     }
     dl div + div { box-shadow: inset 0 1px 0 var(--separator); }
     dt { color: var(--label-2); }
@@ -535,15 +604,31 @@
     }
     #metadata > .muted, #detection > .muted { padding: 10px 20px 18px; }
 
-    .note {
-      padding: 0 20px 20px;
+    .footer {
+      flex: none;
+      width: calc(100% - 48px);
+      max-width: 1192px;
+      margin: 0 auto;
+      padding: 12px 0 14px;
+      border-top: 1px solid var(--separator);
+      text-align: center;
       font-size: 0.75rem;
-      line-height: 1.45;
+      line-height: 1.5;
       color: var(--label-3);
     }
+    .footer-name { color: var(--label-2); font-weight: 500; }
 
     /* ---------- Responsive ---------- */
 
+    /* Narrow or short screens can't fit a side-by-side player and controls,
+       so they fall back to a normal scrolling page. */
+    @media (max-width: 1024px), (max-height: 600px) {
+      body { height: auto; min-height: 100vh; overflow: visible; }
+      .shell { flex: none; }
+      .layout { grid-template-rows: none; }
+      .compare-player { flex: none; aspect-ratio: 16 / 9; }
+      .side { overflow: visible; }
+    }
     @media (max-width: 1024px) {
       .layout { grid-template-columns: 1fr; gap: 20px; }
       /* Put the file picker first on narrow screens, above the player. */
@@ -553,11 +638,15 @@
     @media (max-width: 600px) {
       .nav-inner { padding: 0 16px; }
       .nav-link { padding: 6px 10px; }
-      .shell { padding: 36px 16px 64px; }
-      .page-header { margin-bottom: 28px; }
+      .shell { padding: 24px 16px 32px; }
+      .footer { width: calc(100% - 32px); }
       .compare-player { margin: 0 8px; grid-template-columns: 1fr; aspect-ratio: auto; }
       .compare-pane { aspect-ratio: 16 / 9; }
       .compare-controls { padding: 12px 16px 14px; gap: 12px; }
+      .actions { flex-wrap: wrap; padding: 0 16px 16px; }
+      .actions-spacer { display: none; }
+      .actions > * { flex: 1 1 0; }
+      .actions .primary, .actions .download-link { order: -1; flex-basis: 40%; }
     }
 
     /* ---------- Accessibility preferences ---------- */
@@ -596,7 +685,6 @@
   <div class="shell">
     <header class="page-header">
       <h1>Clean your Gemini videos.</h1>
-      <p>Removes the Gemini / Veo watermark from the bottom-right corner, frame by frame, right in your browser. Compatible audio is kept as-is.</p>
     </header>
 
     <main class="layout">
@@ -620,6 +708,17 @@
             <input id="scrubber" type="range" min="0" max="1000" value="0" aria-label="Playback position" disabled>
             <span id="timeLabel" class="time-label">0:00</span>
           </div>
+          <div class="actions">
+            <button id="detectBtn" type="button">Detect</button>
+            <button id="cancelBtn" type="button" disabled>Stop</button>
+            <button id="resetBtn" type="button">Reset</button>
+            <span class="actions-spacer" aria-hidden="true"></span>
+            <a id="downloadBtn" class="download-link" aria-disabled="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
+              Download
+            </a>
+            <button id="processBtn" class="primary" type="button">Export clean video</button>
+          </div>
         </div>
       </section>
 
@@ -629,7 +728,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5"/><path d="M4 15v2.5A2.5 2.5 0 006.5 20h11a2.5 2.5 0 002.5-2.5V15"/></svg>
           </div>
           <strong>Choose a video</strong>
-          <span class="muted">or drop it here · MP4, WebM, MOV<br>Short 1080p clips work best.</span>
+          <span class="muted">or drop it here · MP4, WebM or MOV</span>
           <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime,video/*" multiple hidden>
         </div>
         <div id="batchQueue" class="batch-queue" aria-label="Batch queue" hidden></div>
@@ -642,16 +741,6 @@
             </div>
             <div class="progress" aria-label="Processing progress"><span id="progressBar"></span></div>
             <div id="status" class="status" data-tone="info" role="status" aria-live="polite"></div>
-            <div class="actions">
-              <button id="processBtn" class="primary" type="button">Export clean video</button>
-              <a id="downloadBtn" class="download-link" aria-disabled="true">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 20h14"/></svg>
-                Download result
-              </a>
-              <button id="detectBtn" type="button">Detect</button>
-              <button id="cancelBtn" type="button" disabled>Stop</button>
-              <button id="resetBtn" type="button">Reset</button>
-            </div>
             <div class="internal-controls" hidden>
               <span id="alphaGainValue">1.00</span>
               <input id="alphaGain" type="range" min="0.25" max="1.35" step="0.05">
@@ -679,22 +768,53 @@
               <input id="allowLowConfidence" type="checkbox">
             </div>
           </div>
-          <p class="note">Export re-encodes the video track and keeps the original audio when MP4 supports its codec.</p>
         </div>
 
-        <div class="panel">
-          <div class="panel-head">Video info</div>
-          <div id="metadata"></div>
-        </div>
-
-        <div class="panel">
-          <div class="panel-head">Detection</div>
-          <div id="detection"></div>
+        <div class="panel details">
+          <div class="segmented" role="tablist" aria-label="Details">
+            <button id="infoTab" type="button" role="tab" aria-selected="true" aria-controls="metadata">Video info</button>
+            <button id="detectionTab" type="button" role="tab" aria-selected="false" aria-controls="detection" tabindex="-1">Detection</button>
+          </div>
+          <div id="metadata" role="tabpanel" aria-labelledby="infoTab"></div>
+          <div id="detection" role="tabpanel" aria-labelledby="detectionTab" hidden></div>
         </div>
       </aside>
     </main>
   </div>
 
+  <footer class="footer">
+    An application made by <span class="footer-name">Taksh Waghela</span>
+  </footer>
+
   <script src="video-app.js"></script>
+  <script>
+    // Details segmented control. Switches to Detection on its own once a
+    // detection result arrives, and back to Video info when the page resets.
+    (() => {
+      const tabs = [document.getElementById('infoTab'), document.getElementById('detectionTab')];
+      const select = (tab) => {
+        for (const t of tabs) {
+          const on = t === tab;
+          t.setAttribute('aria-selected', String(on));
+          t.tabIndex = on ? 0 : -1;
+          document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+        }
+      };
+      tabs.forEach((tab, i) => {
+        tab.addEventListener('click', () => select(tab));
+        tab.addEventListener('keydown', (e) => {
+          if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+          e.preventDefault();
+          const next = tabs[(i + 1) % tabs.length];
+          select(next);
+          next.focus();
+        });
+      });
+      const detection = document.getElementById('detection');
+      new MutationObserver(() => {
+        select(detection.querySelector('dl') ? tabs[1] : tabs[0]);
+      }).observe(detection, { childList: true });
+    })();
+  </script>
 </body>
 </html>

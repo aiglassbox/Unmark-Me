@@ -419,7 +419,7 @@ function renderMetadata(metadata) {
             <div><dt>Duration</dt><dd>${formatSeconds(metadata.duration)}</dd></div>
             <div><dt>Frame rate</dt><dd>${metadata.frameRate.toFixed(2)} fps</dd></div>
             <div><dt>Video bitrate</dt><dd>${formatBitrate(metadata.averageBitrate)}</dd></div>
-            <div><dt>Watermark spec</dt><dd>${reference ? '1920x1080 confirmed' : 'Inferred from aspect ratio (experimental)'}</dd></div>
+            <div><dt>Watermark spec</dt><dd>${reference ? '1920x1080 confirmed' : 'Inferred (experimental)'}</dd></div>
         </dl>
     `;
 }
