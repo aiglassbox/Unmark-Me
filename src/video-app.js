@@ -35,6 +35,7 @@ import {
     saveDebugFileHandoff
 } from './shared/debugFileHandoff.js';
 import { createAllenkFdncnnOnnxRuntime } from './core/allenkFdncnnOnnxRuntime.js';
+import { mountThemeSwitch } from './shared/themeSwitch.js';
 
 const $ = (id) => document.getElementById(id);
 const ALLENK_FDNCNN_WASM_PATHS = Object.freeze({
@@ -1068,4 +1069,5 @@ async function init() {
     await consumePendingVideoHandoff();
 }
 
+mountThemeSwitch(document.getElementById('themeSwitch'));
 init();

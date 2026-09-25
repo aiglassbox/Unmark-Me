@@ -45,11 +45,10 @@ test('internal dev preview page should support multi-file image batches without 
     assert.doesNotMatch(html, /id="downloadAllBtn"/i);
 });
 
-test('internal dev preview page should not expose language switch, theme toggle, or html i18n hooks', async () => {
+test('internal dev preview page should not expose a language switch or html i18n hooks', async () => {
     const html = await readText('public/dev-preview.html');
 
     assert.doesNotMatch(html, /id="langSwitch"/i);
-    assert.doesNotMatch(html, /id="themeToggle"/i);
     assert.doesNotMatch(html, /data-i18n="/i);
     assert.doesNotMatch(html, /\bdark:/i);
 });

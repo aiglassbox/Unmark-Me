@@ -21,6 +21,7 @@ import {
     getDebugFileKind,
     saveDebugFileHandoff
 } from './shared/debugFileHandoff.js';
+import { mountThemeSwitch } from './shared/themeSwitch.js';
 
 const TEXT = {
     loading: 'Loading resources…',
@@ -660,4 +661,5 @@ function setupSlider() {
     });
 }
 
+mountThemeSwitch(document.getElementById('themeSwitch'));
 init();

@@ -6,8 +6,17 @@
   <title>Unmark Me — Remove Gemini Watermarks</title>
   <meta name="description" content="Remove Gemini watermarks from images and videos, right in your browser.">
   <meta name="robots" content="noindex, nofollow">
-  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
-  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f5f5f7">
+  <script>
+    // Apply the saved (or system) theme before first paint so the page never flashes.
+    (() => {
+      let saved = null;
+      try { saved = localStorage.getItem('unmark-theme'); } catch (error) {}
+      const dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      document.querySelector('meta[name="theme-color"]').content = dark ? '#000000' : '#f5f5f7';
+    })();
+  </script>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231d1d1f'/%3E%3Cpath d='M16 7.5l-2 6.5-6.5 2 6.5 2 2 6.5 2-6.5 6.5-2-6.5-2z' fill='%23fff'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="dev-preview.css">
   <script>
@@ -28,10 +37,16 @@
         </span>
         <span class="brand-name">Unmark Me</span>
       </a>
-      <nav class="nav-links" aria-label="Main">
-        <a href="./" class="nav-link" aria-current="page">Images</a>
-        <a href="./video-preview.html" class="nav-link">Video</a>
-      </nav>
+      <div class="nav-end">
+        <nav class="nav-links" aria-label="Main">
+          <a href="./" class="nav-link" aria-current="page">Images</a>
+          <a href="./video-preview.html" class="nav-link">Video</a>
+        </nav>
+        <button id="themeSwitch" class="theme-pull" type="button" role="switch" aria-checked="false" aria-label="Dark mode">
+          <span class="theme-pull-cord" aria-hidden="true"></span>
+          <span class="theme-pull-bulb" aria-hidden="true"></span>
+        </button>
+      </div>
     </div>
   </header>
 
